@@ -1,25 +1,130 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "R markdown"
+output: html_document
 ---
 
+This is an R Markdown document. This is a report that makes use of data from a personal activity monitoring device and answers the questions stated below:
 
-## Loading and preprocessing the data
+Loading and Processing data
+
+```{r}
+data <- read.csv('C:\\Users\\Archana\\OneDrive\\Coursera\\Reproducibe research\\activity.csv')
+```
+
+**1. What is mean total number of steps taken per day?**
+
+Total number of steps taken per day
+
+```{r}
+aggredata <- aggregate(steps~date, data, sum)
+```
+
+Histogram of the total number of steps taken each day
+```{r}
+hist(aggredata$steps,xlab = 'Steps taken each day', main = 'Total number of steps taken each day', col = 'cyan')
+```
+
+Mean of the total number of steps taken per day
+```{r}
+mean(aggredata$steps)
+```
+
+Median of the total number of steps taken per day
+```{r}
+median(aggredata$steps)
+```
+
+**2. What is the average daily activity pattern?**
+
+Average number of steps, averaged across all days
+```{r}
+avgdata <- aggregate(steps~interval, data, mean)
+```
+
+Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r}
+plot(avgdata$interval,avgdata$steps, type = 'l', xlab = '5-minute interval', ylab = 'Average number of steps taken',main = 'Interval Vs Average number of steps ',col = 'blue')
+```
+
+Interval which has the maximum number of steps
+```{r}
+subset(avgdata,steps==max(avgdata$steps))
+```
+
+**3. Imputing missing values**
+
+The total number of missing values in the dataset
+```{r}
+sum(is.na(data))
+```
+
+Filling in all of the missing values in the dataset
+
+Replacing NA's with mean for that 5-minute interval
+```{r}
+data_na <- data[is.na(data),]
+
+for (i in 1:nrow(data_na)){
+  steps_na <- avgdata[data_na$interval[i]==avgdata$interval,]
+  data_na$steps[i] <- steps_na$steps
+  
+}
+  
+data_no_na <- data[!is.na(data),]
+final_data <- rbind(data_no_na, data_na)
+```
+
+A new dataset final_data is created with the missing values filled in
+
+The total number of steps taken each day after filling the missing data
+```{r}
+aggredata_no_na <- aggregate(steps~date, final_data, sum)
+```
 
 
+Histogram of the total number of steps taken each day after filling the missing data
 
-## What is mean total number of steps taken per day?
+```{r}
+hist(aggredata_no_na$steps,xlab = 'Steps taken each day', main = 'Total number of steps taken each day', col = 'red')
+```
+
+Mean of the total number of steps taken per day
+```{r}
+mean(aggredata_no_na$steps)
+```
+
+Median of the total number of steps taken per day
+```{r}
+median(aggredata_no_na$steps)
+```
+
+The mean and median does not change much even after filling the missing data
 
 
-
-## What is the average daily activity pattern?
-
+**4. Are there differences in activity patterns between weekdays and weekends?**
 
 
-## Imputing missing values
+Creating a new variable indicating 'weekday' or 'weekend' for a given date
+
+```{r}
+final_data$weekday_weekend <- weekdays(as.Date(final_data$date))
+final_data$weekday_weekend[final_data$weekday_weekend %in% c('Saturday','Sunday')] <- 'Weekend'
+final_data$weekday_weekend[final_data$weekday_weekend != 'Weekend'] <- 'Weekday'
+
+final_data$weekday_weekend <- as.factor(final_data$weekday_weekend)
+```
 
 
+Average number of steps, averaged across all days
+```{r}
+avgdata <- aggregate(steps~interval + weekday_weekend, final_data, mean)
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r}
+library(ggplot2)
+qplot(interval,steps,data = avgdata, geom = 'line',type = 'l', xlab = 'Interval', ylab = 'Average number of steps') + facet_wrap(~weekday_weekend, ncol = 1)
+```
+
